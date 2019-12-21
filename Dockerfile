@@ -3,15 +3,22 @@ FROM alpine:latest
 WORKDIR /tmp
 
 ## install basic tools
-RUN apk add gcc g++ make\
-            which wget tar autoconf automake\
-            python3 py3-lxml
+RUN apk add build-base\
+            clang\
+            make\
+            autoconf\
+            automake\
+            which\
+            wget
 
-## install gcovr
-RUN pip3 install gcovr
+## use libgomp for clang
+RUN ln -s $(find /usr -name omp.h | head -n1) /usr/include/omp.h; \
+    ln -s /usr/lib/libgomp.so /usr/lib/libomp.so
 
 ## build and install HDF5 library
 RUN wget -q -O hdf5.tgz https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.10/hdf5-1.10.5/src/hdf5-1.10.5.tar.gz; \
+    export CC=clang; \
+    export CXX=clang++; \
     tar -zxf hdf5.tgz; \
     cd /tmp/hdf5-1.10.5; \
     ./autogen.sh; \
