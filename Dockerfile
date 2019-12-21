@@ -1,13 +1,15 @@
-FROM centos:centos8
+FROM alpine:latest
 
 WORKDIR /tmp
 
 ## install basic tools
-RUN yum -y install yum-utils which tar wget autoconf automake\
-           gcc gcc-c++ gcc-gfortran make
+RUN apk add alpine-sdk which wget autoconf automake\
+            python3 py3-lxml
+
+## install gcovr
+RUN pip3 install gcovr
 
 ## build and install HDF5 library
-WORKDIR /tmp/
 RUN wget -q -O hdf5.tgz https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.10/hdf5-1.10.5/src/hdf5-1.10.5.tar.gz; \
     tar -zxf hdf5.tgz; \
     cd /tmp/hdf5-1.10.5; \
