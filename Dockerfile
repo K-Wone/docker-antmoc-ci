@@ -3,7 +3,8 @@ FROM alpine:latest
 WORKDIR /tmp
 
 ## install basic tools
-RUN apk add alpine-sdk which wget autoconf automake\
+RUN apk add gcc g++ make\
+            which wget tar autoconf automake\
             python3 py3-lxml
 
 ## install gcovr
