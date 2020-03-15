@@ -15,6 +15,7 @@ RUN set -ex; \
       sed -i 's/dl-cdn.alpinelinux.org/mirrors.tuna.tsinghua.edu.cn/g' \
              /etc/apk/repositories; \
       apk add --no-cache \
+              cmake \
               make \
               python3 \
               py3-lxml
