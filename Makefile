@@ -3,12 +3,12 @@
 #===============================================================================
 
 # Build-time arguments
-BASE_IMAGE   ?= leavesask/hdf5
-BASE_TAG     ?= 1.10.5-gcc
+BASE_IMAGE   ?= gcc
+BASE_TAG     ?= latest
 
 # Image name
 DOCKER_IMAGE ?= leavesask/antmoc-ci
-DOCKER_TAG   := coverage-gcc
+DOCKER_TAG   := serial
 
 # Default user
 USER_NAME    ?= root

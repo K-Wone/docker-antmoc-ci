@@ -1,6 +1,5 @@
-# the latest HDF5 image compiled with GCC
-ARG BASE_IMAGE="leavesask/hdf5"
-ARG BASE_TAG="1.10.5-gcc"
+ARG BASE_IMAGE="gcc"
+ARG BASE_TAG="latest"
 FROM ${BASE_IMAGE}:${BASE_TAG}
 
 LABEL maintainer="Wang An <wangan.cs@gmail.com>"
@@ -12,17 +11,31 @@ WORKDIR /tmp
 # install basic tools
 RUN set -ex; \
       \
-      sed -i 's/dl-cdn.alpinelinux.org/mirrors.tuna.tsinghua.edu.cn/g' \
-             /etc/apk/repositories; \
-      apk add --no-cache \
+      apt-get update; \
+      apt-get install -y \
               cmake \
               make \
               python3 \
-              py3-lxml
+              python3-pip \
+              python3-lxml
 
 # install gcovr
 RUN pip3 install gcovr
 
+# transfer control to the default user
+ARG USER_NAME=one
+
+# create the first user
+RUN set -eu; \
+      \
+      if ! id -u ${USER_NAME} > /dev/null 2>&1; then \
+      useradd ${USER_NAME}; \
+      usermod -aG sudo ${USER_NAME}; \
+      fi
+
+USER ${USER_NAME}
+
+WORKDIR /home/${USER_NAME}
 
 #-----------------------------------------------------------------------
 # Build-time metadata as defined at http://label-schema.org
