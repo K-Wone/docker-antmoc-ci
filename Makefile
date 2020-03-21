@@ -4,7 +4,7 @@
 
 # Build-time arguments
 BASE_IMAGE   ?= gcc
-BASE_TAG     ?= latest
+BASE_TAG     ?= 8.3.0
 
 # Image name
 DOCKER_IMAGE ?= leavesask/antmoc-ci

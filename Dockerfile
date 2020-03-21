@@ -1,26 +1,52 @@
+# stage 1
 ARG BASE_IMAGE="gcc"
-ARG BASE_TAG="latest"
+ARG BASE_TAG="8.3.0"
 FROM ${BASE_IMAGE}:${BASE_TAG}
 
 LABEL maintainer="Wang An <wangan.cs@gmail.com>"
 
 USER root
 
-WORKDIR /tmp
-
 # install basic tools
+WORKDIR /tmp
 RUN set -ex; \
       \
       apt-get update; \
       apt-get install -y \
-              cmake \
-              make \
-              python3 \
-              python3-pip \
-              python3-lxml
+              git \
+              make
 
-# install gcovr
-RUN pip3 install gcovr
+# install lcov
+ARG LCOV_VERSION="1.14"
+ENV LCOV_VERSION=${LCOV_VERSION}
+ENV LCOV_TARBALL="lcov-${LCOV_VERSION}.tar.gz"
+RUN set -ex; \
+    wget https://github.com/linux-test-project/lcov/releases/download/v${LCOV_VERSION}/${LCOV_TARBALL}; \
+    tar zxf ${LCOV_TARBALL}
+
+WORKDIR /tmp/lcov-${LCOV_VERSION}
+RUN set -ex; \
+    make install
+
+# install cmake
+WORKDIR /tmp
+ARG CMAKE_VERSION="3.15.7"
+ENV CMAKE_VERSION=${CMAKE_VERSION}
+ENV CMAKE_TARBALL="cmake-${CMAKE_VERSION}.tar.gz"
+
+RUN set -ex; \
+    wget https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/${CMAKE_TARBALL}; \
+    tar zxf ${CMAKE_TARBALL}
+
+WORKDIR /tmp/cmake-${CMAKE_VERSION}
+RUN set -ex; \
+    ./configure; \
+    make -j "$(nproc)"; \
+    make install
+
+# clean sources
+WORKDIR /tmp
+RUN rm -r cmake-${CMAKE_VERSION} ${CMAKE_TARBALL} lcov-${LCOV_VERSION} ${LCOV_TARBALL}
 
 # transfer control to the default user
 ARG USER_NAME=one
