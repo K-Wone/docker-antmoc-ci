@@ -8,8 +8,8 @@
 
 - `gcc`, `bare`
 - `clang`, `bare-clang`
-- `openmpi`
-- `mpich`
+- `openmpi`, `bare-openmpi`
+- `mpich`, `bare-mpich`
 
 # How to use
 
@@ -27,7 +27,7 @@
 
 # How to build
 
-The base image is [spack/ubuntu-xenial](https://hub.docker.com/r/spack/ubuntu-xenial).
+The base image is [spack](https://hub.docker.com/r/spack).
 
 ## make
 
