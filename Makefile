@@ -3,12 +3,20 @@
 #===============================================================================
 
 # Build-time arguments
-BASE_IMAGE   ?= gcc
-BASE_TAG     ?= 8.3.0
+BASE_IMAGE   ?= leavesask/gcc
+BASE_TAG     ?= latest
+
+# Dependencies
+CMAKE_VERSION="3.15.5"
+HDF5_VERSION="1.10.5"
+HDF5_VARIANTS="-mpi"
+FMT_VERSION="6.0.0"
+GTEST_VERSION="1.10.0"
+LCOV_VERSION="1.14"
 
 # Image name
 DOCKER_IMAGE ?= leavesask/antmoc-ci
-DOCKER_TAG   := serial
+DOCKER_TAG   := gcc
 
 # Default user
 USER_NAME    ?= root
@@ -38,6 +46,8 @@ docker_build:
 	docker build \
                  --build-arg BASE_IMAGE=$(BASE_IMAGE) \
                  --build-arg BASE_TAG=$(BASE_TAG) \
+                 --build-arg HDF5_VERSION=$(HDF5_VERSION) \
+                 --build-arg HDF5_VARIANTS=$(HDF5_VARIANTS) \
                  --build-arg BUILD_DATE=$(BUILD_DATE) \
                  --build-arg VCS_URL=$(VCS_URL) \
                  --build-arg VCS_REF=$(GIT_COMMIT) \
