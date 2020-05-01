@@ -7,9 +7,8 @@ BASE_IMAGE   ?= leavesask/gcc
 BASE_TAG     ?= latest
 
 # Dependencies
-CMAKE_VERSION="3.15.5"
 HDF5_VERSION="1.10.5"
-HDF5_VARIANTS="-mpi"
+HDF5_VARIANTS="~cxx~fortran~hl~mpi"
 FMT_VERSION="6.0.0"
 GTEST_VERSION="1.10.0"
 LCOV_VERSION="1.14"

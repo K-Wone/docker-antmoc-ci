@@ -1,13 +1,108 @@
 name: Build and Publish Docker
 
-on: [push]
+on:
+  push:
+    branches:
+      - master
 
 jobs:
-  build:
+  build_gcc:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@master
+
+    - name: Publish to Registry
+      uses: elgohr/Publish-Docker-Github-Action@master
+      env:
+        BUILD_DATE: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+        VCS_URL: $(git config --get remote.origin.url)
+        VCS_REF: $(git rev-parse --short HEAD)
+        BASE_IMAGE: leavesask/gcc
+        BASE_TAG: 9.2.0
+        HDF5_VARIANTS: "~cxx~fortran~hl~mpi"
+      with:
+        name: leavesask/antmoc-ci
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        buildargs: BASE_IMAGE,BASE_TAG,HDF5_VARIANTS,BUILD_DATE,VCS_URL,VCS_REF
+        buildoptions: "--compress"
+        tags: "latest,gcc"
+
+  build_openmpi:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@master
+
+    - name: Publish to Registry
+      uses: elgohr/Publish-Docker-Github-Action@master
+      env:
+        BUILD_DATE: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+        VCS_URL: $(git config --get remote.origin.url)
+        VCS_REF: $(git rev-parse --short HEAD)
+        BASE_IMAGE: leavesask/gompi
+        BASE_TAG: 4.0.0
+        HDF5_VARIANTS: "~cxx~fortran~hl+mpi ^openmpi@4.0.0"
+      with:
+        name: leavesask/antmoc-ci
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        buildargs: BASE_IMAGE,BASE_TAG,HDF5_VARIANTS,BUILD_DATE,VCS_URL,VCS_REF
+        buildoptions: "--compress"
+        tags: "openmpi"
+
+  build_mpich:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@master
+
+    - name: Publish to Registry
+      uses: elgohr/Publish-Docker-Github-Action@master
+      env:
+        BUILD_DATE: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+        VCS_URL: $(git config --get remote.origin.url)
+        VCS_REF: $(git rev-parse --short HEAD)
+        BASE_IMAGE: leavesask/gmpich
+        BASE_TAG: 3.3.2
+        HDF5_VARIANTS: "~cxx~fortran~hl+mpi ^mpich@3.3.2"
+      with:
+        name: leavesask/antmoc-ci
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        buildargs: BASE_IMAGE,BASE_TAG,HDF5_VARIANTS,BUILD_DATE,VCS_URL,VCS_REF
+        buildoptions: "--compress"
+        tags: "mpich"
+
+  build_clang:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@master
+
+    - name: Publish to Registry
+      uses: elgohr/Publish-Docker-Github-Action@master
+      env:
+        BUILD_DATE: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+        VCS_URL: $(git config --get remote.origin.url)
+        VCS_REF: $(git rev-parse --short HEAD)
+        BASE_IMAGE: leavesask/llvm
+        BASE_TAG: latest
+        HDF5_VARIANTS: "~cxx~fortran~hl~mpi"
+      with:
+        name: leavesask/antmoc-ci
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        buildargs: BASE_IMAGE,BASE_TAG,HDF5_VARIANTS,BUILD_DATE,VCS_URL,VCS_REF
+        buildoptions: "--compress"
+        tags: "clang"
+
+  build_bare:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@master
 
     - name: Publish to Registry
       uses: elgohr/Publish-Docker-Github-Action@master
@@ -20,3 +115,76 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
         buildargs: BUILD_DATE,VCS_URL,VCS_REF
+        buildoptions: "--compress"
+        dockerfile: nodeps.Dockerfile
+        tags: "bare"
+
+  build_bare_clang:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@master
+
+    - name: Publish to Registry
+      uses: elgohr/Publish-Docker-Github-Action@master
+      env:
+        BUILD_DATE: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+        VCS_URL: $(git config --get remote.origin.url)
+        VCS_REF: $(git rev-parse --short HEAD)
+        BASE_IMAGE: leavesask/llvm
+        BASE_TAG: latest
+        buildargs: BASE_IMAGE,BASE_TAG,BUILD_DATE,VCS_URL,VCS_REF
+      with:
+        name: leavesask/antmoc-ci
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        buildargs: BUILD_DATE,VCS_URL,VCS_REF
+        buildoptions: "--compress"
+        dockerfile: nodeps.Dockerfile
+        tags: "bare-clang"
+
+  build_bare_openmpi:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@master
+
+    - name: Publish to Registry
+      uses: elgohr/Publish-Docker-Github-Action@master
+      env:
+        BUILD_DATE: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+        VCS_URL: $(git config --get remote.origin.url)
+        VCS_REF: $(git rev-parse --short HEAD)
+        BASE_IMAGE: leavesask/gompi
+        BASE_TAG: 4.0.0
+      with:
+        name: leavesask/antmoc-ci
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        buildargs: BASE_IMAGE,BASE_TAG,BUILD_DATE,VCS_URL,VCS_REF
+        buildoptions: "--compress"
+        dockerfile: nodeps.Dockerfile
+        tags: "bare-openmpi"
+
+  build_bare_mpich:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@master
+
+    - name: Publish to Registry
+      uses: elgohr/Publish-Docker-Github-Action@master
+      env:
+        BUILD_DATE: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+        VCS_URL: $(git config --get remote.origin.url)
+        VCS_REF: $(git rev-parse --short HEAD)
+        BASE_IMAGE: leavesask/gmpich
+        BASE_TAG: 3.3.2
+      with:
+        name: leavesask/antmoc-ci
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        buildargs: BASE_IMAGE,BASE_TAG,BUILD_DATE,VCS_URL,VCS_REF
+        buildoptions: "--compress"
+        dockerfile: nodeps.Dockerfile
+        tags: "bare-mpich"

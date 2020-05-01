@@ -15,37 +15,6 @@ RUN set -ex; \
               git \
               make
 
-# install fmt
-ARG FMT_VERSION="6.0.0"
-ENV FMT_VERSION=${FMT_VERSION}
-
-RUN set -eu; \
-      \
-      spack install --show-log-on-error --no-checksum -y fmt@${FMT_VERSION}; \
-      spack load fmt@${FMT_VERSION}
-
-# install hdf5
-ARG HDF5_VERSION="1.10.5"
-ENV HDF5_VERSION=${HDF5_VERSION}
-ARG HDF5_VARIANTS="~cxx~fortran~hl~mpi"
-ENV HDF5_VARIANTS=${HDF5_VARIANTS}
-
-RUN set -eu; \
-      \
-      spack install --show-log-on-error -y hdf5@${HDF5_VERSION} ${HDF5_VARIANTS}; \
-      spack load hdf5@${HDF5_VERSION}
-
-# install googletest
-ARG GTEST_VERSION="1.10.0"
-ENV GTEST_VERSION=${GTEST_VERSION}
-ARG GTEST_VARIANTS="+gmock"
-ENV GTEST_VARIANTS=${GTEST_VARIANTS}
-
-RUN set -eu; \
-      \
-      spack install --show-log-on-error -y googletest@${GTEST_VERSION} ${GTEST_VARIANTS}; \
-      spack load googletest@${GTEST_VERSION}
-
 # install cmake
 RUN set -eu; \
       \

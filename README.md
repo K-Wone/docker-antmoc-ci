@@ -6,8 +6,10 @@
 
 # Supported tags
 
-- `coverage-gcc`
-- `coverage-clang`
+- `gcc`, `bare`
+- `clang`, `bare-clang`
+- `openmpi`
+- `mpich`
 
 # How to use
 
@@ -25,11 +27,13 @@
 
 # How to build
 
+The base image is [spack/ubuntu-xenial](https://hub.docker.com/r/spack/ubuntu-xenial).
+
 ## make
 
 There are a bunch of build-time arguments you can use to build the image.
 
-It is hightly recommended that you build the image with `make`.
+It is highly recommended that you build the image with `make`.
 
 ```bash
 # Build an image for code coverage
@@ -47,17 +51,15 @@ As an alternative, you can build the image with `docker build` command.
 
 ```bash
 docker build \
-        --build-arg BASE_IMAGE="leavesask/hdf5" \
-        --build-arg BASE_TAG="1.10.5-gcc" \
+        --build-arg BASE_IMAGE="leavesask/gcc" \
+        --build-arg BASE_TAG="latest" \
         --build-arg BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` \
         --build-arg VCS_REF=`git rev-parse --short HEAD` \
-        -t my-repo/antmoc-ci:latest .
+        -t my-repo/antmoc-ci:gcc .
 ```
 
 Arguments and their defaults are listed below.
 
-- `BASE_IMAGE`: value (default=`leavesask/hdf5`)
-  - This is the base image for all of the stages.
-  - It is supposed to be a toolchain containing compilers and dependencies.
+- `BASE_IMAGE`: the base image (defaults to `leavesask/gcc`)
 
-- `BASE_TAG`: value (default=`latest`)
+- `BASE_TAG`: the image tag (defaults to `latest`)
