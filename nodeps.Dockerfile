@@ -1,7 +1,5 @@
-ARG BASE_IMAGE="leavesask/gcc"
-ARG BASE_TAG="latest"
-FROM ${BASE_IMAGE}:${BASE_TAG}
-
+ARG   BASE_IMAGE="leavesask/gcc:latest"
+FROM  $BASE_IMAGE
 LABEL maintainer="Wang An <wangan.cs@gmail.com>"
 
 USER root
@@ -37,15 +35,19 @@ RUN set -eu; \
 USER $USER_NAME
 WORKDIR $USER_HOME
 
+# set compiler
+ARG COMPILER_SPEC="gcc@9.2.0"
+ENV COMPILER_SPEC=$COMPILER_SPEC
+
 # install cmake
-RUN spack install --show-log-on-error cmake@3.16.2; \
+RUN spack install cmake@3.16.2 %$COMPILER_SPEC; \
     spack clean -a
 
 # install lcov
 ARG LCOV_VERSION="1.14"
 ENV LCOV_VERSION=${LCOV_VERSION}
 
-RUN spack install --show-log-on-error lcov@${LCOV_VERSION}; \
+RUN spack install lcov@${LCOV_VERSION} %$COMPILER_SPEC; \
     spack clean -a
 
 # setup development environment
@@ -54,12 +56,12 @@ RUN set -e; \
       \
       echo "#!/bin/env bash" > $ENV_FILE; \
       echo "source $SPACK_ROOT/share/spack/setup-env.sh" >> $ENV_FILE; \
-      echo "spack load -r cmake@3.16.2" >> $ENV_FILE; \
+      echo "spack load cmake@3.16.2" >> $ENV_FILE; \
       echo "spack load lcov@${LCOV_VERSION}" >> $ENV_FILE
 
 # reset the entrypoint
 ENTRYPOINT []
-CMD []
+CMD ["bin/bash"]
 
 
 #-----------------------------------------------------------------------

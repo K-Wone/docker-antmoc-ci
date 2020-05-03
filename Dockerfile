@@ -1,7 +1,5 @@
-ARG BASE_IMAGE="leavesask/gcc"
-ARG BASE_TAG="latest"
-FROM ${BASE_IMAGE}:${BASE_TAG}
-
+ARG   BASE_IMAGE="leavesask/gcc:latest"
+FROM  $BASE_IMAGE
 LABEL maintainer="Wang An <wangan.cs@gmail.com>"
 
 USER root
@@ -21,14 +19,14 @@ ENV SPACK_ROOT=/opt/spack
 
 # transfer control to the default user
 ARG USER_NAME=one
-ENV USER_HOME="/home/${USER_NAME}"
+ENV USER_HOME="/home/$USER_NAME"
 
 # create the first user
 RUN set -eu; \
       \
-      if ! id -u ${USER_NAME} > /dev/null 2>&1; then \
-          useradd -m ${USER_NAME}; \
-          echo "${USER_NAME} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers; \
+      if ! id -u $USER_NAME > /dev/null 2>&1; then \
+          useradd -m $USER_NAME; \
+          echo "$USER_NAME ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers; \
           cp -r ~/.spack $USER_HOME; \
           chown -R ${USER_NAME}: $USER_HOME/.spack; \
           chown -R ${USER_NAME}: $SPACK_ROOT; \
@@ -37,11 +35,22 @@ RUN set -eu; \
 USER $USER_NAME
 WORKDIR $USER_HOME
 
+# set compiler
+ARG COMPILER_SPEC="gcc@9.2.0"
+ENV COMPILER_SPEC=$COMPILER_SPEC
+
 # install fmt
 ARG FMT_VERSION="6.0.0"
 ENV FMT_VERSION=${FMT_VERSION}
 RUN set -e; \
-    spack install --show-log-on-error --no-checksum fmt@${FMT_VERSION}; \
+    spack install --no-checksum fmt@${FMT_VERSION} %$COMPILER_SPEC; \
+    spack clean -a
+
+# install tinyxml2
+ARG TINYXML2_VERSION="8.0.0"
+ENV TINYXML2_VERSION=${TINYXML2_VERSION}
+RUN set -e; \
+    spack install --no-checksum tinyxml2@${TINYXML2_VERSION} %$COMPILER_SPEC; \
     spack clean -a
 
 # install hdf5
@@ -50,7 +59,7 @@ ENV HDF5_VERSION=${HDF5_VERSION}
 ARG HDF5_VARIANTS="~cxx~fortran~hl~mpi"
 ENV HDF5_VARIANTS=${HDF5_VARIANTS}
 RUN set -e; \
-    spack install --show-log-on-error hdf5@${HDF5_VERSION} ${HDF5_VARIANTS}; \
+    spack install hdf5@${HDF5_VERSION} ${HDF5_VARIANTS} %$COMPILER_SPEC; \
     spack clean -a
 
 # install googletest
@@ -59,19 +68,19 @@ ENV GTEST_VERSION=${GTEST_VERSION}
 ARG GTEST_VARIANTS="+gmock"
 ENV GTEST_VARIANTS=${GTEST_VARIANTS}
 RUN set -e; \
-    spack install --show-log-on-error googletest@${GTEST_VERSION} ${GTEST_VARIANTS}; \
+    spack install googletest@${GTEST_VERSION} ${GTEST_VARIANTS} %$COMPILER_SPEC; \
     spack clean -a
 
 # install cmake
 RUN set -e; \
-    spack install --show-log-on-error cmake@3.16.2; \
+    spack install cmake@3.16.2 %$COMPILER_SPEC; \
     spack clean -a
 
 # install lcov
 ARG LCOV_VERSION="1.14"
 ENV LCOV_VERSION=${LCOV_VERSION}
 RUN set -e; \
-    spack install --show-log-on-error lcov@${LCOV_VERSION}; \
+    spack install lcov@${LCOV_VERSION} %$COMPILER_SPEC; \
     spack clean -a
 
 # setup development environment
@@ -81,14 +90,15 @@ RUN set -e; \
       echo "#!/bin/env bash" > $ENV_FILE; \
       echo "source $SPACK_ROOT/share/spack/setup-env.sh" >> $ENV_FILE; \
       echo "spack load cmake@3.16.2" >> $ENV_FILE; \
-      echo "spack load -r hdf5@${HDF5_VERSION}" >> $ENV_FILE; \
       echo "spack load fmt@${FMT_VERSION}" >> $ENV_FILE; \
+      echo "spack load tinyxml2@${TINYXML2_VERSION}" >> $ENV_FILE; \
+      echo "spack load hdf5@${HDF5_VERSION}" >> $ENV_FILE; \
       echo "spack load googletest@${GTEST_VERSION}" >> $ENV_FILE; \
       echo "spack load lcov@${LCOV_VERSION}" >> $ENV_FILE
 
 # reset the entrypoint
 ENTRYPOINT []
-CMD []
+CMD ["/bin/bash"]
 
 
 #-----------------------------------------------------------------------
