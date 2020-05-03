@@ -42,17 +42,20 @@ RUN set -e; \
 
 
 # install cmake
-RUN set -e; \
-    spack install --show-log-on-error -y cmake; \
-    spack load cmake
+RUN spack install --show-log-on-error -y cmake@3.16.2
 
 # install lcov
 ARG LCOV_VERSION="1.14"
 ENV LCOV_VERSION=${LCOV_VERSION}
 
+RUN spack install --show-log-on-error -y lcov@${LCOV_VERSION}
+
 RUN set -e; \
-    spack install --show-log-on-error -y lcov@${LCOV_VERSION}; \
-    spack load lcov@${LCOV_VERSION}
+      \
+      echo "spack load cmake@3.16.2" >> ~/.bashrc; \
+      echo "spack load lcov@${LCOV_VERSION}" >> ~/.bashrc
+
+CMD source ~/.bashrc
 
 
 #-----------------------------------------------------------------------

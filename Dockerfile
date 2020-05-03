@@ -45,9 +45,7 @@ RUN set -e; \
 ARG FMT_VERSION="6.0.0"
 ENV FMT_VERSION=${FMT_VERSION}
 
-RUN set -e; \
-    spack install --show-log-on-error --no-checksum -y fmt@${FMT_VERSION}; \
-    spack load fmt@${FMT_VERSION}
+RUN spack install --show-log-on-error --no-checksum -y fmt@${FMT_VERSION}
 
 # install hdf5
 ARG HDF5_VERSION="1.10.5"
@@ -55,9 +53,7 @@ ENV HDF5_VERSION=${HDF5_VERSION}
 ARG HDF5_VARIANTS="~cxx~fortran~hl~mpi"
 ENV HDF5_VARIANTS=${HDF5_VARIANTS}
 
-RUN set -e; \
-    spack install --show-log-on-error -y hdf5@${HDF5_VERSION} ${HDF5_VARIANTS}; \
-    spack load -r hdf5@${HDF5_VERSION}
+RUN spack install --show-log-on-error -y hdf5@${HDF5_VERSION} ${HDF5_VARIANTS}
 
 # install googletest
 ARG GTEST_VERSION="1.10.0"
@@ -65,22 +61,24 @@ ENV GTEST_VERSION=${GTEST_VERSION}
 ARG GTEST_VARIANTS="+gmock"
 ENV GTEST_VARIANTS=${GTEST_VARIANTS}
 
-RUN set -e; \
-    spack install --show-log-on-error -y googletest@${GTEST_VERSION} ${GTEST_VARIANTS}; \
-    spack load googletest@${GTEST_VERSION}
+RUN spack install --show-log-on-error -y googletest@${GTEST_VERSION} ${GTEST_VARIANTS}
 
 # install cmake
-RUN set -e; \
-    spack install --show-log-on-error -y cmake; \
-    spack load cmake
+RUN spack install --show-log-on-error -y cmake@3.16.2
 
 # install lcov
 ARG LCOV_VERSION="1.14"
 ENV LCOV_VERSION=${LCOV_VERSION}
 
+RUN spack install --show-log-on-error -y lcov@${LCOV_VERSION}
+
 RUN set -e; \
-    spack install --show-log-on-error -y lcov@${LCOV_VERSION}; \
-    spack load lcov@${LCOV_VERSION}
+      \
+      echo "spack load cmake@3.16.2" >> ~/.bashrc; \
+      echo "spack load -r hdf5@${HDF5_VERSION}" >> ~/.bashrc; \
+      echo "spack load fmt@${FMT_VERSION}" >> ~/.bashrc; \
+      echo "spack load googletest@${GTEST_VERSION}" >> ~/.bashrc; \
+      echo "spack load lcov@${LCOV_VERSION}" >> ~/.bashrc
 
 
 #-----------------------------------------------------------------------
@@ -95,3 +93,9 @@ LABEL org.label-schema.build-date=${BUILD_DATE} \
       org.label-schema.vcs-ref=${VCS_REF} \
       org.label-schema.vcs-url=${VCS_URL} \
       org.label-schema.schema-version="1.0"
+
+#-----------------------------------------------------------------------
+# Setup entrypoint
+#-----------------------------------------------------------------------
+ENTRYPOINT ["/bin/bash"]
+CMD ["spack find --loaded"]
