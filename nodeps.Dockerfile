@@ -16,6 +16,9 @@ RUN set -ex; \
               make \
               sudo
 
+# set spack root
+ENV SPACK_ROOT=/opt/spack
+
 # transfer control to the default user
 ARG USER_NAME=one
 ENV USER_HOME="/home/${USER_NAME}"
@@ -24,38 +27,39 @@ ENV USER_HOME="/home/${USER_NAME}"
 RUN set -eu; \
       \
       if ! id -u ${USER_NAME} > /dev/null 2>&1; then \
-      useradd -m ${USER_NAME}; \
-      echo "${USER_NAME} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers; \
-      cp -r ~/.spack $USER_HOME; \
-      chown -R ${USER_NAME}: ${USER_HOME}/.spack; \
+          useradd -m ${USER_NAME}; \
+          echo "${USER_NAME} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers; \
+          cp -r ~/.spack $USER_HOME; \
+          chown -R ${USER_NAME}: $USER_HOME/.spack; \
+          chown -R ${USER_NAME}: $SPACK_ROOT; \
       fi
 
 USER $USER_NAME
 WORKDIR $USER_HOME
 
-# initialize spack environment
-ENV SPACK_ROOT=/opt/spack
-ENV PATH=${SPACK_ROOT}/bin:$PATH
-RUN set -e; \
-    sudo chown -R ${USER_NAME}: $SPACK_ROOT; \
-    source ${SPACK_ROOT}/share/spack/setup-env.sh
-
-
 # install cmake
-RUN spack install --show-log-on-error -y cmake@3.16.2
+RUN spack install --show-log-on-error cmake@3.16.2; \
+    spack clean -a
 
 # install lcov
 ARG LCOV_VERSION="1.14"
 ENV LCOV_VERSION=${LCOV_VERSION}
 
-RUN spack install --show-log-on-error -y lcov@${LCOV_VERSION}
+RUN spack install --show-log-on-error lcov@${LCOV_VERSION}; \
+    spack clean -a
 
+# setup development environment
+ENV ENV_FILE="$USER_HOME/setup-env.sh"
 RUN set -e; \
       \
-      echo "spack load cmake@3.16.2" >> ~/.bashrc; \
-      echo "spack load lcov@${LCOV_VERSION}" >> ~/.bashrc
+      echo "#!/bin/env bash" > $ENV_FILE; \
+      echo "source $SPACK_ROOT/share/spack/setup-env.sh" >> $ENV_FILE; \
+      echo "spack load -r cmake@3.16.2" >> $ENV_FILE; \
+      echo "spack load lcov@${LCOV_VERSION}" >> $ENV_FILE
 
-CMD source ~/.bashrc
+# reset the entrypoint
+ENTRYPOINT []
+CMD []
 
 
 #-----------------------------------------------------------------------
