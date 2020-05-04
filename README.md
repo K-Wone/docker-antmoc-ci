@@ -53,6 +53,8 @@ As an alternative, you can build the image with `docker build` command.
 docker build \
         --build-arg BASE_IMAGE="leavesask/gcc" \
         --build-arg BASE_TAG="latest" \
+        --build-arg COMPILER_SPEC="gcc@9.2.0" \
+        --build-arg EXTRA_SPECS="target=skylake" \
         --build-arg BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` \
         --build-arg VCS_REF=`git rev-parse --short HEAD` \
         -t my-repo/antmoc-ci:gcc .
@@ -63,3 +65,7 @@ Arguments and their defaults are listed below.
 - `BASE_IMAGE`: the base image (defaults to `leavesask/gcc`)
 
 - `BASE_TAG`: the image tag (defaults to `latest`)
+
+- `COMPILER_SPEC`: the compiler supported by spack (defaults to `gcc@9.2.0`)
+
+- `EXTRA_SPECS`: extra options for building packages, such as `target=skylake` (defaults to none)

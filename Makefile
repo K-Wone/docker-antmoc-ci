@@ -3,18 +3,19 @@
 #===============================================================================
 
 # Build-time arguments
-BASE_IMAGE   ?= leavesask/gcc:latest
+BASE_IMAGE    ?= leavesask/gcc:latest
 
 # Compiler
-COMPILER_SPEC="gcc@9.2.0"
+COMPILER_SPEC ?="gcc@9.2.0"
+EXTRA_SPECS   ?="target=skylake"
 
 # Dependencies
-HDF5_VERSION="1.10.5"
-HDF5_VARIANTS="~cxx~fortran~hl~mpi"
-FMT_VERSION="6.0.0"
-TINYXML2_VERSION="8.0.0"
-GTEST_VERSION="1.10.0"
-LCOV_VERSION="1.14"
+HDF5_VERSION      ?="1.10.5"
+HDF5_VARIANTS     ?="~cxx~fortran~hl~mpi"
+FMT_VERSION       ?="6.0.0"
+TINYXML2_VERSION  ?="8.0.0"
+GTEST_VERSION     ?="1.10.0"
+LCOV_VERSION      ?="1.14"
 
 # Image name
 DOCKER_IMAGE ?= leavesask/antmoc-ci
@@ -48,6 +49,7 @@ docker_build:
 	docker build \
                  --build-arg BASE_IMAGE=$(BASE_IMAGE) \
                  --build-arg COMPILER_SPEC=$(COMPILER_SPEC) \
+                 --build-arg EXTRA_SPECS=$(EXTRA_SPECS) \
                  --build-arg HDF5_VERSION=$(HDF5_VERSION) \
                  --build-arg HDF5_VARIANTS=$(HDF5_VARIANTS) \
                  --build-arg FMT_VERSION=$(FMT_VERSION) \

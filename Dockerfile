@@ -17,7 +17,7 @@ RUN set -ex; \
 # set spack root
 ENV SPACK_ROOT=/opt/spack
 
-# transfer control to the default user
+# set user name
 ARG USER_NAME=one
 ENV USER_HOME="/home/$USER_NAME"
 
@@ -29,28 +29,26 @@ RUN set -eu; \
           echo "$USER_NAME ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers; \
           cp -r ~/.spack $USER_HOME; \
           chown -R ${USER_NAME}: $USER_HOME/.spack; \
-          chown -R ${USER_NAME}: $SPACK_ROOT; \
       fi
-
-USER $USER_NAME
-WORKDIR $USER_HOME
 
 # set compiler
 ARG COMPILER_SPEC="gcc@9.2.0"
 ENV COMPILER_SPEC=$COMPILER_SPEC
+ARG EXTRA_SPECS=""
+ENV EXTRA_SPECS=$EXTRA_SPECS
 
 # install fmt
 ARG FMT_VERSION="6.0.0"
 ENV FMT_VERSION=${FMT_VERSION}
 RUN set -e; \
-    spack install --no-checksum fmt@${FMT_VERSION} %$COMPILER_SPEC; \
+    spack install --no-checksum fmt@${FMT_VERSION} %$COMPILER_SPEC $EXTRA_SPECS; \
     spack clean -a
 
 # install tinyxml2
 ARG TINYXML2_VERSION="8.0.0"
 ENV TINYXML2_VERSION=${TINYXML2_VERSION}
 RUN set -e; \
-    spack install --no-checksum tinyxml2@${TINYXML2_VERSION} %$COMPILER_SPEC; \
+    spack install --no-checksum tinyxml2@${TINYXML2_VERSION} %$COMPILER_SPEC $EXTRA_SPECS; \
     spack clean -a
 
 # install hdf5
@@ -59,7 +57,7 @@ ENV HDF5_VERSION=${HDF5_VERSION}
 ARG HDF5_VARIANTS="~cxx~fortran~hl~mpi"
 ENV HDF5_VARIANTS=${HDF5_VARIANTS}
 RUN set -e; \
-    spack install hdf5@${HDF5_VERSION} ${HDF5_VARIANTS} %$COMPILER_SPEC; \
+    spack install hdf5@${HDF5_VERSION} ${HDF5_VARIANTS} %$COMPILER_SPEC $EXTRA_SPECS; \
     spack clean -a
 
 # install googletest
@@ -68,20 +66,24 @@ ENV GTEST_VERSION=${GTEST_VERSION}
 ARG GTEST_VARIANTS="+gmock"
 ENV GTEST_VARIANTS=${GTEST_VARIANTS}
 RUN set -e; \
-    spack install googletest@${GTEST_VERSION} ${GTEST_VARIANTS} %$COMPILER_SPEC; \
+    spack install googletest@${GTEST_VERSION} ${GTEST_VARIANTS} %$COMPILER_SPEC $EXTRA_SPECS; \
     spack clean -a
 
 # install cmake
 RUN set -e; \
-    spack install cmake@3.16.2 %$COMPILER_SPEC; \
+    spack install cmake@3.16.2 %$COMPILER_SPEC $EXTRA_SPECS; \
     spack clean -a
 
 # install lcov
 ARG LCOV_VERSION="1.14"
 ENV LCOV_VERSION=${LCOV_VERSION}
 RUN set -e; \
-    spack install lcov@${LCOV_VERSION} %$COMPILER_SPEC; \
+    spack install lcov@${LCOV_VERSION} %$COMPILER_SPEC $EXTRA_SPECS; \
     spack clean -a
+
+# transfer control to the default user
+USER $USER_NAME
+WORKDIR $USER_HOME
 
 # setup development environment
 ENV ENV_FILE="$USER_HOME/setup-env.sh"

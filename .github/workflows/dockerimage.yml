@@ -20,12 +20,13 @@ jobs:
         VCS_REF: $(git rev-parse --short HEAD)
         BASE_IMAGE: leavesask/gcc:9.2.0
         COMPILER_SPEC: gcc@9.2.0
+        EXTRA_SPECS: "target=skylake"
         HDF5_VARIANTS: "~cxx~fortran~hl~mpi"
       with:
         name: leavesask/antmoc-ci
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
-        buildargs: BASE_IMAGE,COMPILER_SPEC,HDF5_VARIANTS,BUILD_DATE,VCS_URL,VCS_REF
+        buildargs: BASE_IMAGE,COMPILER_SPEC,EXTRA_SPECS,HDF5_VARIANTS,BUILD_DATE,VCS_URL,VCS_REF
         buildoptions: "--compress"
         tags: "latest,gcc"
 
@@ -43,12 +44,13 @@ jobs:
         VCS_REF: $(git rev-parse --short HEAD)
         BASE_IMAGE: leavesask/gompi:4.0.0
         COMPILER_SPEC: gcc@9.2.0
+        EXTRA_SPECS: "target=skylake"
         HDF5_VARIANTS: "~cxx~fortran~hl+mpi ^openmpi@4.0.0"
       with:
         name: leavesask/antmoc-ci
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
-        buildargs: BASE_IMAGE,COMPILER_SPEC,HDF5_VARIANTS,BUILD_DATE,VCS_URL,VCS_REF
+        buildargs: BASE_IMAGE,COMPILER_SPEC,EXTRA_SPECS,HDF5_VARIANTS,BUILD_DATE,VCS_URL,VCS_REF
         buildoptions: "--compress"
         tags: "openmpi"
 
@@ -66,12 +68,13 @@ jobs:
         VCS_REF: $(git rev-parse --short HEAD)
         BASE_IMAGE: leavesask/gmpich:3.3.2
         COMPILER_SPEC: gcc@9.2.0
+        EXTRA_SPECS: "target=skylake"
         HDF5_VARIANTS: "~cxx~fortran~hl+mpi ^mpich@3.3.2"
       with:
         name: leavesask/antmoc-ci
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
-        buildargs: BASE_IMAGE,COMPILER_SPEC,HDF5_VARIANTS,BUILD_DATE,VCS_URL,VCS_REF
+        buildargs: BASE_IMAGE,COMPILER_SPEC,EXTRA_SPECS,HDF5_VARIANTS,BUILD_DATE,VCS_URL,VCS_REF
         buildoptions: "--compress"
         tags: "mpich"
 
@@ -89,12 +92,13 @@ jobs:
         VCS_REF: $(git rev-parse --short HEAD)
         BASE_IMAGE: leavesask/llvm:9
         COMPILER_SPEC: clang@9.0.0
+        EXTRA_SPECS: ""
         HDF5_VARIANTS: "~cxx~fortran~hl~mpi"
       with:
         name: leavesask/antmoc-ci
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
-        buildargs: BASE_IMAGE,COMPILER_SPEC,HDF5_VARIANTS,BUILD_DATE,VCS_URL,VCS_REF
+        buildargs: BASE_IMAGE,COMPILER_SPEC,EXTRA_SPECS,HDF5_VARIANTS,BUILD_DATE,VCS_URL,VCS_REF
         buildoptions: "--compress"
         tags: "clang"
 
@@ -112,11 +116,12 @@ jobs:
         VCS_REF: $(git rev-parse --short HEAD)
         BASE_IMAGE: leavesask/gcc:9.2.0
         COMPILER_SPEC: gcc@9.2.0
+        EXTRA_SPECS: "target=skylake"
       with:
         name: leavesask/antmoc-ci
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
-        buildargs: BASE_IMAGE,COMPILER_SPEC,BUILD_DATE,VCS_URL,VCS_REF
+        buildargs: BASE_IMAGE,COMPILER_SPEC,EXTRA_SPECS,BUILD_DATE,VCS_URL,VCS_REF
         buildoptions: "--compress"
         dockerfile: nodeps.Dockerfile
         tags: "bare"
@@ -135,11 +140,12 @@ jobs:
         VCS_REF: $(git rev-parse --short HEAD)
         BASE_IMAGE: leavesask/llvm:9
         COMPILER_SPEC: clang@9.0.0
+        EXTRA_SPECS: ""
       with:
         name: leavesask/antmoc-ci
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
-        buildargs: BASE_IMAGE,COMPILER_SPEC,BUILD_DATE,VCS_URL,VCS_REF
+        buildargs: BASE_IMAGE,COMPILER_SPEC,EXTRA_SPECS,BUILD_DATE,VCS_URL,VCS_REF
         buildoptions: "--compress"
         dockerfile: nodeps.Dockerfile
         tags: "bare-clang"
@@ -158,11 +164,12 @@ jobs:
         VCS_REF: $(git rev-parse --short HEAD)
         BASE_IMAGE: leavesask/gompi:4.0.0
         COMPILER_SPEC: gcc@9.2.0
+        EXTRA_SPECS: "target=skylake"
       with:
         name: leavesask/antmoc-ci
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
-        buildargs: BASE_IMAGE,COMPILER_SPEC,BUILD_DATE,VCS_URL,VCS_REF
+        buildargs: BASE_IMAGE,COMPILER_SPEC,EXTRA_SPECS,BUILD_DATE,VCS_URL,VCS_REF
         buildoptions: "--compress"
         dockerfile: nodeps.Dockerfile
         tags: "bare-openmpi"
@@ -181,11 +188,12 @@ jobs:
         VCS_REF: $(git rev-parse --short HEAD)
         BASE_IMAGE: leavesask/gmpich:3.3.2
         COMPILER_SPEC: gcc@9.2.0
+        EXTRA_SPECS: "target=skylake"
       with:
         name: leavesask/antmoc-ci
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
-        buildargs: BASE_IMAGE,COMPILER_SPEC,BUILD_DATE,VCS_URL,VCS_REF
+        buildargs: BASE_IMAGE,COMPILER_SPEC,EXTRA_SPECS,BUILD_DATE,VCS_URL,VCS_REF
         buildoptions: "--compress"
         dockerfile: nodeps.Dockerfile
         tags: "bare-mpich"

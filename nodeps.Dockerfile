@@ -17,7 +17,7 @@ RUN set -ex; \
 # set spack root
 ENV SPACK_ROOT=/opt/spack
 
-# transfer control to the default user
+# set user name
 ARG USER_NAME=one
 ENV USER_HOME="/home/${USER_NAME}"
 
@@ -29,26 +29,28 @@ RUN set -eu; \
           echo "${USER_NAME} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers; \
           cp -r ~/.spack $USER_HOME; \
           chown -R ${USER_NAME}: $USER_HOME/.spack; \
-          chown -R ${USER_NAME}: $SPACK_ROOT; \
       fi
-
-USER $USER_NAME
-WORKDIR $USER_HOME
 
 # set compiler
 ARG COMPILER_SPEC="gcc@9.2.0"
 ENV COMPILER_SPEC=$COMPILER_SPEC
+ARG EXTRA_SPECS=""
+ENV EXTRA_SPECS=$EXTRA_SPECS
 
 # install cmake
-RUN spack install cmake@3.16.2 %$COMPILER_SPEC; \
+RUN spack install cmake@3.16.2 %$COMPILER_SPEC $EXTRA_SPECS; \
     spack clean -a
 
 # install lcov
 ARG LCOV_VERSION="1.14"
 ENV LCOV_VERSION=${LCOV_VERSION}
 
-RUN spack install lcov@${LCOV_VERSION} %$COMPILER_SPEC; \
+RUN spack install lcov@${LCOV_VERSION} %$COMPILER_SPEC $EXTRA_SPECS; \
     spack clean -a
+
+# transfer control to the default user
+USER $USER_NAME
+WORKDIR $USER_HOME
 
 # setup development environment
 ENV ENV_FILE="$USER_HOME/setup-env.sh"
