@@ -38,14 +38,15 @@ ARG EXTRA_SPECS=""
 ENV EXTRA_SPECS=$EXTRA_SPECS
 
 # install cmake
-RUN spack install cmake@3.16.2 %$COMPILER_SPEC $EXTRA_SPECS; \
+RUN set -e; \
+    spack install cmake@3.16.2 %$COMPILER_SPEC $EXTRA_SPECS; \
     spack clean -a
 
 # install lcov
 ARG LCOV_VERSION="1.14"
 ENV LCOV_VERSION=${LCOV_VERSION}
-
-RUN spack install lcov@${LCOV_VERSION} %$COMPILER_SPEC $EXTRA_SPECS; \
+RUN set -e; \
+    spack install lcov@${LCOV_VERSION} %$COMPILER_SPEC $EXTRA_SPECS; \
     spack clean -a
 
 # transfer control to the default user

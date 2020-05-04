@@ -6,6 +6,30 @@ on:
       - master
 
 jobs:
+  coverage:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@master
+
+    - name: Publish to Registry
+      uses: elgohr/Publish-Docker-Github-Action@master
+      env:
+        BUILD_DATE: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+        VCS_URL: $(git config --get remote.origin.url)
+        VCS_REF: $(git rev-parse --short HEAD)
+        BASE_IMAGE: leavesask/gcc:8.3.0
+        COMPILER_SPEC: gcc@8.3.0
+        EXTRA_SPECS: "target=skylake"
+        HDF5_VARIANTS: "~cxx~fortran~hl~mpi"
+      with:
+        name: leavesask/antmoc-ci
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        buildargs: BASE_IMAGE,COMPILER_SPEC,EXTRA_SPECS,HDF5_VARIANTS,BUILD_DATE,VCS_URL,VCS_REF
+        buildoptions: "--compress"
+        tags: "coverage"
+
   build_gcc:
     runs-on: ubuntu-latest
 
@@ -91,8 +115,8 @@ jobs:
         VCS_URL: $(git config --get remote.origin.url)
         VCS_REF: $(git rev-parse --short HEAD)
         BASE_IMAGE: leavesask/llvm:9
-        COMPILER_SPEC: clang@9.0.0
-        EXTRA_SPECS: ""
+        COMPILER_SPEC: clang@9.0.1
+        EXTRA_SPECS: "target=skylake"
         HDF5_VARIANTS: "~cxx~fortran~hl~mpi"
       with:
         name: leavesask/antmoc-ci
@@ -139,8 +163,8 @@ jobs:
         VCS_URL: $(git config --get remote.origin.url)
         VCS_REF: $(git rev-parse --short HEAD)
         BASE_IMAGE: leavesask/llvm:9
-        COMPILER_SPEC: clang@9.0.0
-        EXTRA_SPECS: ""
+        COMPILER_SPEC: clang@9.0.1
+        EXTRA_SPECS: "target=skylake"
       with:
         name: leavesask/antmoc-ci
         username: ${{ secrets.DOCKER_USERNAME }}
