@@ -91,12 +91,12 @@ RUN set -e; \
       \
       echo "#!/bin/env bash" > $ENV_FILE; \
       echo "source $SPACK_ROOT/share/spack/setup-env.sh" >> $ENV_FILE; \
-      echo "spack load cmake@3.16.2" >> $ENV_FILE; \
-      echo "spack load fmt@${FMT_VERSION}" >> $ENV_FILE; \
-      echo "spack load tinyxml2@${TINYXML2_VERSION}" >> $ENV_FILE; \
-      echo "spack load hdf5@${HDF5_VERSION}" >> $ENV_FILE; \
-      echo "spack load googletest@${GTEST_VERSION}" >> $ENV_FILE; \
-      echo "spack load lcov@${LCOV_VERSION}" >> $ENV_FILE
+      echo "spack load cmake@3.16.2 %$COMPILER_SPEC" >> $ENV_FILE; \
+      echo "spack load fmt@$FMT_VERSION %$COMPILER_SPEC" >> $ENV_FILE; \
+      echo "spack load tinyxml2@$TINYXML2_VERSION %$COMPILER_SPEC" >> $ENV_FILE; \
+      echo "spack load hdf5@$HDF5_VERSION %$COMPILER_SPEC" >> $ENV_FILE; \
+      echo "spack load googletest@$GTEST_VERSION %$COMPILER_SPEC" >> $ENV_FILE; \
+      echo "spack load lcov@$LCOV_VERSION %$COMPILER_SPEC" >> $ENV_FILE
 
 # reset the entrypoint
 ENTRYPOINT []
