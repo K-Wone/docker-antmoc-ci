@@ -6,10 +6,7 @@
 
 # Supported tags
 
-- `gcc`, `bare`
-- `clang`, `bare-clang`
-- `openmpi`, `bare-openmpi`
-- `mpich`, `bare-mpich`
+- `0.1.14`
 
 # How to use
 
@@ -27,7 +24,7 @@
 
 # How to build
 
-The base image is [spack](https://hub.docker.com/r/spack).
+The base image is [Spack](https://hub.docker.com/r/spack).
 
 ## make
 
@@ -51,21 +48,12 @@ As an alternative, you can build the image with `docker build` command.
 
 ```bash
 docker build \
-        --build-arg BASE_IMAGE="leavesask/gcc" \
-        --build-arg BASE_TAG="latest" \
+        --build-arg SPACK_IMAGE="spack/ubuntu-bionic" \
+        --build-arg SPACK_VERSION="latest" \
         --build-arg COMPILER_SPEC="gcc@9.2.0" \
-        --build-arg EXTRA_SPECS="target=skylake" \
+        --build-arg EXTRA_SPECS="target=x86_64" \
         --build-arg BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` \
         --build-arg VCS_REF=`git rev-parse --short HEAD` \
         -t my-repo/antmoc-ci:gcc .
 ```
 
-Arguments and their defaults are listed below.
-
-- `BASE_IMAGE`: the base image (defaults to `leavesask/gcc`)
-
-- `BASE_TAG`: the image tag (defaults to `latest`)
-
-- `COMPILER_SPEC`: the compiler supported by spack (defaults to `gcc@9.2.0`)
-
-- `EXTRA_SPECS`: extra options for building packages, such as `target=skylake` (defaults to none)

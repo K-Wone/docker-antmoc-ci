@@ -1,24 +1,147 @@
-ARG   BASE_IMAGE="leavesask/gcc:latest"
-FROM  $BASE_IMAGE
-LABEL maintainer="Wang An <wangan.cs@gmail.com>"
+#-------------------------------------------------------------------------------
+# Stage 1: build packages
+#-------------------------------------------------------------------------------
+ARG SPACK_IMAGE="spack/ubuntu-bionic"
+ARG SPACK_VERSION="latest"
+FROM ${SPACK_IMAGE}:${SPACK_VERSION} AS builder
 
+#-------------------------------------------------------------------------------
+# Set up environments
+#-------------------------------------------------------------------------------
 USER root
-
-# install basic tools
 WORKDIR /tmp
-RUN set -ex; \
-      \
-      apt-get update; \
-      apt-get install -y \
-              git \
-              make \
-              sudo
+
+# set Spack root
+ARG SPACK_ROOT=/opt/spack
+ENV SPACK_ROOT=${SPACK_ROOT}
+
+# set Spack paths which should be shared between docker stages
+ARG CONFIG_DIR=/etc/spack
+ARG INSTALL_DIR=/opt/software
+
+RUN set -e; \
+    mkdir -p $CONFIG_DIR; \
+    mkdir -p $INSTALL_DIR; \
+    echo "config:" > $CONFIG_DIR/config.yaml; \
+    echo "  install_tree:" >> $CONFIG_DIR/config.yaml; \
+    echo "    root: $INSTALL_DIR" >> $CONFIG_DIR/config.yaml
+
+#-------------------------------------------------------------------------------
+# Find or install compilers
+#-------------------------------------------------------------------------------
+# find system gcc
+ARG EXTRA_SPECS="target=x86_64"
+ARG GCC_SPEC="gcc"
+RUN spack compiler add; \
+    spack compilers
+
+# install llvm
+ARG LLVM_SPEC="llvm@9.0.1"
+ARG CLANG_SPEC="clang@9.0.1"
+
+RUN set -eu; \
+    \
+    spack install ${LLVM_SPEC} %${GCC_SPEC}; \
+    spack load ${LLVM_SPEC}; \
+    spack compiler add; \
+    spack compilers
+
+# copy the configuration file to the system path
+RUN spack config get compilers > ${CONFIG_DIR}/compilers.yaml
+
+#-------------------------------------------------------------------------------
+# Install MPI implementations
+#-------------------------------------------------------------------------------
+ARG MPICH_SPEC="mpich@3.3.2"
+ARG OPENMPI_SPEC="openmpi@4.0.5"
+
+RUN set -e; \
+    \
+    mpis=("$MPICH_SPEC" "$OPENMPI_SPEC"); \
+    for i in "${mpis[@]}"; do \
+        spack install --fail-fast -ny $i %$GCC_SPEC; \
+    done
+
+#-------------------------------------------------------------------------------
+# Install other packages
+#-------------------------------------------------------------------------------
+ARG CMAKE_SPEC="cmake@3.18.4"
+ARG FMT_SPEC="fmt@6.0.0"
+ARG TINYXML2_SPEC="tinyxml2@7.0.0"
+ARG HDF5_SPEC="hdf5@1.10.7~cxx~fortran+hl~mpi"
+ARG PHDF5_SPEC="hdf5@1.10.7~cxx~fortran+hl+mpi"
+ARG GTEST_SPEC="googletest@1.10.0+gmock"
+ARG LCOV_SPEC="lcov@1.14"
+
+RUN set -e; \
+    \
+    compilers=("$GCC_SPEC"); \
+    mpis=("$MPICH_SPEC" "$OPENMPI_SPEC"); \
+    packages=( \
+        "$FMT_SPEC" \
+        "$TINYXML2_SPEC" \
+        "$HDF5_SPEC" \
+        "$GTEST_SPEC" \
+    ); \
+    packages_once=( \
+        "$CMAKE_SPEC" \
+        "$LCOV_SPEC" \
+    ); \
+    packages_with_mpi=( \
+        "$PHDF5_SPEC" \
+    ); \
+    \
+    for i in "${packages_once[@]}"; do \
+        spack install --fail-fast -ny $i %$GCC_SPEC; \
+    done; \
+    \
+    for c in "${compilers[@]}"; do \
+        for i in "${packages[@]}"; do \
+            spack install --fail-fast -ny $i %$c; \
+        done; \
+        \
+        for m in "${mpis[@]}"; do \
+            for i in "${packages_with_mpi[@]}"; do \
+                spack install --fail-fast -ny $i %$c ^$m; \
+            done; \
+        done; \
+    done; \
+    spack gc -y; \
+    spack clean -a
+
+# cleanup
+RUN set -e; \
+    spack gc -y; \
+    spack clean -a
+
+
+#-------------------------------------------------------------------------------
+# Stage 2: build the runtime environment
+#-------------------------------------------------------------------------------
+ARG SPACK_IMAGE
+ARG SPACK_VERSION
+FROM ${SPACK_IMAGE}:${SPACK_VERSION}
+
+LABEL maintainer="An Wang <wangan.cs@gmail.com>"
 
 # set spack root
-ENV SPACK_ROOT=/opt/spack
+ARG SPACK_ROOT=/opt/spack
+ENV SPACK_ROOT=${SPACK_ROOT}
 
+#-------------------------------------------------------------------------------
+# Copy artifacts from stage 1 to stage 2
+#-------------------------------------------------------------------------------
+ARG CONFIG_DIR=/etc/spack
+ARG INSTALL_DIR=/opt/software
+
+COPY --from=builder $CONFIG_DIR $CONFIG_DIR
+COPY --from=builder $INSTALL_DIR $INSTALL_DIR
+
+#-------------------------------------------------------------------------------
+# Add a user
+#-------------------------------------------------------------------------------
 # set user name
-ARG USER_NAME=one
+ARG USER_NAME=hpcer
 ENV USER_HOME="/home/$USER_NAME"
 
 # create the first user
@@ -31,74 +154,23 @@ RUN set -eu; \
           chown -R ${USER_NAME}: $USER_HOME/.spack; \
       fi
 
-# set compiler
-ARG COMPILER_SPEC="gcc@9.2.0"
-ENV COMPILER_SPEC=$COMPILER_SPEC
-ARG EXTRA_SPECS=""
-ENV EXTRA_SPECS=$EXTRA_SPECS
-
-# install fmt
-ARG FMT_VERSION="6.0.0"
-ENV FMT_VERSION=${FMT_VERSION}
-RUN set -e; \
-    spack install --no-checksum fmt@${FMT_VERSION} %$COMPILER_SPEC $EXTRA_SPECS; \
-    spack clean -a
-
-# install tinyxml2
-ARG TINYXML2_VERSION="8.0.0"
-ENV TINYXML2_VERSION=${TINYXML2_VERSION}
-RUN set -e; \
-    spack install --no-checksum tinyxml2@${TINYXML2_VERSION} %$COMPILER_SPEC $EXTRA_SPECS; \
-    spack clean -a
-
-# install hdf5
-ARG HDF5_VERSION="1.10.5"
-ENV HDF5_VERSION=${HDF5_VERSION}
-ARG HDF5_VARIANTS="~cxx~fortran~hl~mpi"
-ENV HDF5_VARIANTS=${HDF5_VARIANTS}
-RUN set -e; \
-    spack install hdf5@${HDF5_VERSION} ${HDF5_VARIANTS} %$COMPILER_SPEC $EXTRA_SPECS; \
-    spack clean -a
-
-# install googletest
-ARG GTEST_VERSION="1.10.0"
-ENV GTEST_VERSION=${GTEST_VERSION}
-ARG GTEST_VARIANTS="+gmock"
-ENV GTEST_VARIANTS=${GTEST_VARIANTS}
-RUN set -e; \
-    spack install googletest@${GTEST_VERSION} ${GTEST_VARIANTS} %$COMPILER_SPEC $EXTRA_SPECS; \
-    spack clean -a
-
-# install cmake
-RUN set -e; \
-    spack install cmake@3.16.2 %$COMPILER_SPEC $EXTRA_SPECS; \
-    spack clean -a
-
-# install lcov
-ARG LCOV_VERSION="1.14"
-ENV LCOV_VERSION=${LCOV_VERSION}
-RUN set -e; \
-    spack install lcov@${LCOV_VERSION} %$COMPILER_SPEC $EXTRA_SPECS; \
-    spack clean -a
-
 # transfer control to the default user
 USER $USER_NAME
 WORKDIR $USER_HOME
 
-# setup development environment
+#-------------------------------------------------------------------------------
+# Generate a script for enabling Spack
+#-------------------------------------------------------------------------------
 ENV ENV_FILE="$USER_HOME/setup-env.sh"
 RUN set -e; \
-      \
-      echo "#!/bin/env bash" > $ENV_FILE; \
-      echo "source $SPACK_ROOT/share/spack/setup-env.sh" >> $ENV_FILE; \
-      echo "spack load cmake@3.16.2 %$COMPILER_SPEC" >> $ENV_FILE; \
-      echo "spack load fmt@$FMT_VERSION %$COMPILER_SPEC" >> $ENV_FILE; \
-      echo "spack load tinyxml2@$TINYXML2_VERSION %$COMPILER_SPEC" >> $ENV_FILE; \
-      echo "spack load hdf5@$HDF5_VERSION %$COMPILER_SPEC" >> $ENV_FILE; \
-      echo "spack load googletest@$GTEST_VERSION %$COMPILER_SPEC" >> $ENV_FILE; \
-      echo "spack load lcov@$LCOV_VERSION %$COMPILER_SPEC" >> $ENV_FILE
+    \
+    echo "#!/bin/env bash" > $ENV_FILE; \
+    echo ". $SPACK_ROOT/share/spack/setup-env.sh" >> $ENV_FILE; \
+    chmod u+x $ENV_FILE
 
-# reset the entrypoint
+#-------------------------------------------------------------------------------
+# Reset the entrypoint
+#-------------------------------------------------------------------------------
 ENTRYPOINT []
 CMD ["/bin/bash"]
 

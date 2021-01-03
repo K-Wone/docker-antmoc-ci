@@ -3,26 +3,28 @@
 #===============================================================================
 
 # Build-time arguments
-BASE_IMAGE    ?= leavesask/gcc:latest
+SPACK_IMAGE       ?= "spack/ubuntu-bionic"
+SPACK_VERSION     ?= "latest"
 
 # Compiler
-COMPILER_SPEC ?="gcc@9.2.0"
-EXTRA_SPECS   ?="target=skylake"
-
-# Dependencies
-HDF5_VERSION      ?="1.10.5"
-HDF5_VARIANTS     ?="~cxx~fortran~hl~mpi"
-FMT_VERSION       ?="6.0.0"
-TINYXML2_VERSION  ?="8.0.0"
-GTEST_VERSION     ?="1.10.0"
-LCOV_VERSION      ?="1.14"
+EXTRA_SPECS       ?= "target=x86_64"
+LLVM_SPEC         ?= "llvm@9.0.1"
+MPICH_SPEC        ?= "mpich@3.3.2"
+OPENMPI_SPEC      ?= "openmpi@4.0.5"
+CMAKE_SPEC        ?= "cmake@3.18.4"
+FMT_SPEC          ?= "fmt@6.0.0"
+TINYXML2_SPEC     ?= "tinyxml2@7.0.0"
+HDF5_SPEC         ?= "hdf5@1.10.7~cxx~fortran+hl~mpi"
+PHDF5_SPEC        ?= "hdf5@1.10.7~cxx~fortran+hl+mpi"
+GTEST_SPEC        ?= "googletest@1.10.0+gmock"
+LCOV_SPEC         ?= "lcov@1.14"
 
 # Image name
 DOCKER_IMAGE ?= leavesask/antmoc-ci
-DOCKER_TAG   := gcc
+DOCKER_TAG   := 0.1.14
 
 # Default user
-USER_NAME    ?= root
+USER_NAME    ?= hpcer
 
 #===============================================================================
 # Variables and objects
@@ -47,15 +49,19 @@ release: docker_build docker_push output
 docker_build:
 	# Build Docker image
 	docker build \
-                 --build-arg BASE_IMAGE=$(BASE_IMAGE) \
-                 --build-arg COMPILER_SPEC=$(COMPILER_SPEC) \
+                 --build-arg SPACK_IMAGE=$(SPACK_IMAGE) \
+                 --build-arg SPACK_VERSION=$(SPACK_VERSION) \
                  --build-arg EXTRA_SPECS=$(EXTRA_SPECS) \
-                 --build-arg HDF5_VERSION=$(HDF5_VERSION) \
-                 --build-arg HDF5_VARIANTS=$(HDF5_VARIANTS) \
-                 --build-arg FMT_VERSION=$(FMT_VERSION) \
-                 --build-arg TINYXML2_VERSION=$(TINYXML2_VERSION) \
-                 --build-arg GTEST_VERSION=$(GTEST_VERSION) \
-                 --build-arg LCOV_VERSION=$(LCOV_VERSION) \
+                 --build-arg LLVM_SPEC=$(LLVM_SPEC) \
+                 --build-arg MPICH_SPEC=$(MPICH_SPEC) \
+                 --build-arg OPENMPI_SPEC=$(OPENMPI_SPEC) \
+                 --build-arg CMAKE_SPEC=$(CMAKE_SPEC) \
+                 --build-arg FMT_SPEC=$(FMT_SPEC) \
+                 --build-arg TINYXML2_SPEC=$(TINYXML2_SPEC) \
+                 --build-arg HDF5_SPEC=$(HDF5_SPEC) \
+                 --build-arg PHDF5_SPEC=$(PHDF5_SPEC) \
+                 --build-arg GTEST_SPEC=$(GTEST_SPEC) \
+                 --build-arg LCOV_SPEC=$(LCOV_SPEC) \
                  --build-arg BUILD_DATE=$(BUILD_DATE) \
                  --build-arg VCS_URL=$(VCS_URL) \
                  --build-arg VCS_REF=$(GIT_COMMIT) \
