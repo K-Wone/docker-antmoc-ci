@@ -6,7 +6,7 @@
 SPACK_IMAGE       ?= "spack/ubuntu-bionic"
 SPACK_VERSION     ?= "latest"
 
-# Compiler
+# Packages
 EXTRA_SPECS       ?= "target=x86_64"
 LLVM_SPEC         ?= "llvm@9.0.1"
 MPICH_SPEC        ?= "mpich@3.3.2"
@@ -18,10 +18,11 @@ HDF5_SPEC         ?= "hdf5@1.10.7~cxx~fortran+hl~mpi"
 PHDF5_SPEC        ?= "hdf5@1.10.7~cxx~fortran+hl+mpi"
 GTEST_SPEC        ?= "googletest@1.10.0+gmock"
 LCOV_SPEC         ?= "lcov@1.14"
+ROCM_VERSION      ?= "3.10.0"
 
 # Image name
 DOCKER_IMAGE ?= leavesask/antmoc-ci
-DOCKER_TAG   := 0.1.14
+DOCKER_TAG   := 0.1.15
 
 # Default user
 USER_NAME    ?= hpcer
@@ -62,6 +63,7 @@ docker_build:
                  --build-arg PHDF5_SPEC=$(PHDF5_SPEC) \
                  --build-arg GTEST_SPEC=$(GTEST_SPEC) \
                  --build-arg LCOV_SPEC=$(LCOV_SPEC) \
+                 --build-arg ROCM_VERSION=$(ROCM_VERSION) \
                  --build-arg BUILD_DATE=$(BUILD_DATE) \
                  --build-arg VCS_URL=$(VCS_URL) \
                  --build-arg VCS_REF=$(GIT_COMMIT) \

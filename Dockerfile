@@ -72,6 +72,10 @@ ARG HDF5_SPEC="hdf5@1.10.7~cxx~fortran+hl~mpi"
 ARG PHDF5_SPEC="hdf5@1.10.7~cxx~fortran+hl+mpi"
 ARG GTEST_SPEC="googletest@1.10.0+gmock"
 ARG LCOV_SPEC="lcov@1.14"
+ARG ROCM_VERSION="3.10.0"
+ARG HIP_SPEC="hip@${ROCM_VERSION}"
+ARG ROCPRIM_SPEC="rocprim@${ROCM_VERSION}"
+ARG ROCTHRUST_SPEC="rocthrust@${ROCM_VERSION}"
 
 RUN set -e; \
     \
@@ -83,17 +87,16 @@ RUN set -e; \
         "$HDF5_SPEC" \
         "$GTEST_SPEC" \
     ); \
-    packages_once=( \
-        "$CMAKE_SPEC" \
-        "$LCOV_SPEC" \
-    ); \
     packages_with_mpi=( \
         "$PHDF5_SPEC" \
     ); \
-    \
-    for i in "${packages_once[@]}"; do \
-        spack install --fail-fast -ny $i %$GCC_SPEC; \
-    done; \
+    packages_once=( \
+        "$CMAKE_SPEC" \
+        "$LCOV_SPEC" \
+        "$HIP_SPEC" \
+        "$ROCPRIM_SPEC" \
+        "$ROCTHRUST_SPEC" \
+    ); \
     \
     for c in "${compilers[@]}"; do \
         for i in "${packages[@]}"; do \
@@ -106,6 +109,11 @@ RUN set -e; \
             done; \
         done; \
     done; \
+    \
+    for i in "${packages_once[@]}"; do \
+        spack install --fail-fast -ny $i %$GCC_SPEC; \
+    done; \
+    \
     spack gc -y; \
     spack clean -a
 
