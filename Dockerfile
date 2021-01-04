@@ -18,30 +18,46 @@ ENV SPACK_ROOT=${SPACK_ROOT}
 # set Spack paths which should be shared between docker stages
 ARG CONFIG_DIR=/etc/spack
 ARG INSTALL_DIR=/opt/software
+ARG MIRROR_DIR=/opt/mirror
 
 RUN set -e; \
     mkdir -p $CONFIG_DIR; \
     mkdir -p $INSTALL_DIR; \
-    echo "config:" > $CONFIG_DIR/config.yaml; \
-    echo "  install_tree:" >> $CONFIG_DIR/config.yaml; \
-    echo "    root: $INSTALL_DIR" >> $CONFIG_DIR/config.yaml
+    mkdir -p $MIRROR_DIR
+
+ARG TARGET="x86_64"
+
+RUN set -e; \
+    echo "config:"                      > $CONFIG_DIR/config.yaml; \
+    echo "  install_tree:"              >> $CONFIG_DIR/config.yaml; \
+    echo "    root: $INSTALL_DIR"       >> $CONFIG_DIR/config.yaml; \
+    echo "mirrors:"                     > $CONFIG_DIR/mirrors.yaml; \
+    echo "  local: file://$MIRROR_DIR"  >> $CONFIG_DIR/mirrors.yaml; \
+    echo "packages:"                    > $CONFIG_DIR/packages.yaml; \
+    echo "  all:"                       >> $CONFIG_DIR/packages.yaml; \
+    echo "    target: [$TARGET]"        >> $CONFIG_DIR/packages.yaml
 
 #-------------------------------------------------------------------------------
 # Find or install compilers
 #-------------------------------------------------------------------------------
 # find system gcc
-ARG EXTRA_SPECS="target=x86_64"
 ARG GCC_SPEC="gcc"
 RUN spack compiler add; \
     spack compilers
 
+# find external packages
+COPY spack_find_externals.sh .
+RUN set -e; \
+    chmod u+x ./spack_find_externals.sh; \
+    ./spack_find_externals.sh
+
 # install llvm
-ARG LLVM_SPEC="llvm@9.0.1"
-ARG CLANG_SPEC="clang@9.0.1"
+ARG LLVM_SPEC="llvm"
 
 RUN set -eu; \
     \
-    spack install ${LLVM_SPEC} %${GCC_SPEC}; \
+    spack mirror create -D -d ${MIRROR_DIR} ${LLVM_SPEC}; \
+    spack install --fail-fast -ny ${LLVM_SPEC} %${GCC_SPEC}; \
     spack load ${LLVM_SPEC}; \
     spack compiler add; \
     spack compilers
@@ -50,78 +66,12 @@ RUN set -eu; \
 RUN spack config get compilers > ${CONFIG_DIR}/compilers.yaml
 
 #-------------------------------------------------------------------------------
-# Install MPI implementations
-#-------------------------------------------------------------------------------
-ARG MPICH_SPEC="mpich@3.3.2"
-ARG OPENMPI_SPEC="openmpi@4.0.5"
-
-RUN set -e; \
-    \
-    mpis=("$MPICH_SPEC" "$OPENMPI_SPEC"); \
-    for i in "${mpis[@]}"; do \
-        spack install --fail-fast -ny $i %$GCC_SPEC; \
-    done
-
-#-------------------------------------------------------------------------------
 # Install other packages
 #-------------------------------------------------------------------------------
-ARG CMAKE_SPEC="cmake@3.18.4"
-ARG FMT_SPEC="fmt@6.0.0"
-ARG TINYXML2_SPEC="tinyxml2@7.0.0"
-ARG HDF5_SPEC="hdf5@1.10.7~cxx~fortran+hl~mpi"
-ARG PHDF5_SPEC="hdf5@1.10.7~cxx~fortran+hl+mpi"
-ARG GTEST_SPEC="googletest@1.10.0+gmock"
-ARG LCOV_SPEC="lcov@1.14"
-ARG ROCM_VERSION="3.10.0"
-ARG HIP_SPEC="hip@${ROCM_VERSION}"
-ARG ROCPRIM_SPEC="rocprim@${ROCM_VERSION}"
-ARG ROCTHRUST_SPEC="rocthrust@${ROCM_VERSION}"
-
+COPY spack_install.sh .
 RUN set -e; \
-    \
-    compilers=("$GCC_SPEC"); \
-    mpis=("$MPICH_SPEC" "$OPENMPI_SPEC"); \
-    packages=( \
-        "$FMT_SPEC" \
-        "$TINYXML2_SPEC" \
-        "$HDF5_SPEC" \
-        "$GTEST_SPEC" \
-    ); \
-    packages_with_mpi=( \
-        "$PHDF5_SPEC" \
-    ); \
-    packages_once=( \
-        "$CMAKE_SPEC" \
-        "$LCOV_SPEC" \
-        "$HIP_SPEC" \
-        "$ROCPRIM_SPEC" \
-        "$ROCTHRUST_SPEC" \
-    ); \
-    \
-    for c in "${compilers[@]}"; do \
-        for i in "${packages[@]}"; do \
-            spack install --fail-fast -ny $i %$c; \
-        done; \
-        \
-        for m in "${mpis[@]}"; do \
-            for i in "${packages_with_mpi[@]}"; do \
-                spack install --fail-fast -ny $i %$c ^$m; \
-            done; \
-        done; \
-    done; \
-    \
-    for i in "${packages_once[@]}"; do \
-        spack install --fail-fast -ny $i %$GCC_SPEC; \
-    done; \
-    \
-    spack gc -y; \
-    spack clean -a
-
-# cleanup
-RUN set -e; \
-    spack gc -y; \
-    spack clean -a
-
+    chmod u+x ./spack_install.sh; \
+    ./spack_install.sh
 
 #-------------------------------------------------------------------------------
 # Stage 2: build the runtime environment
@@ -172,7 +122,7 @@ WORKDIR $USER_HOME
 ENV ENV_FILE="$USER_HOME/setup-env.sh"
 RUN set -e; \
     \
-    echo "#!/bin/env bash" > $ENV_FILE; \
+    echo "#!/usr/bin/env bash" > $ENV_FILE; \
     echo ". $SPACK_ROOT/share/spack/setup-env.sh" >> $ENV_FILE; \
     chmod u+x $ENV_FILE
 
