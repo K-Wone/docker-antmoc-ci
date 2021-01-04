@@ -19,12 +19,16 @@ ENV SPACK_ROOT=${SPACK_ROOT}
 ARG CONFIG_DIR=/etc/spack
 ARG INSTALL_DIR=/opt/software
 ARG MIRROR_DIR=/opt/mirror
+ARG REPO_DIR=/opt/repo
 
+# create directories for Spack
 RUN set -e; \
     mkdir -p $CONFIG_DIR; \
     mkdir -p $INSTALL_DIR; \
-    mkdir -p $MIRROR_DIR
+    mkdir -p $MIRROR_DIR; \
+    spack repo create $REPO_DIR ustb
 
+# set the arch for packages
 ARG TARGET="x86_64"
 
 RUN set -e; \
@@ -33,9 +37,14 @@ RUN set -e; \
     echo "    root: $INSTALL_DIR"       >> $CONFIG_DIR/config.yaml; \
     echo "mirrors:"                     > $CONFIG_DIR/mirrors.yaml; \
     echo "  local: file://$MIRROR_DIR"  >> $CONFIG_DIR/mirrors.yaml; \
+    echo "repos:"                       > $CONFIG_DIR/repos.yaml; \
+    echo "  - $REPO_DIR"                >> $CONFIG_DIR/repos.yaml; \
     echo "packages:"                    > $CONFIG_DIR/packages.yaml; \
     echo "  all:"                       >> $CONFIG_DIR/packages.yaml; \
     echo "    target: [$TARGET]"        >> $CONFIG_DIR/packages.yaml
+
+# copy custom package.py to the image
+COPY packages/ $REPO_DIR/packages/
 
 #-------------------------------------------------------------------------------
 # Find or install compilers
@@ -66,7 +75,7 @@ RUN set -eu; \
 RUN spack config get compilers > ${CONFIG_DIR}/compilers.yaml
 
 #-------------------------------------------------------------------------------
-# Install other packages
+# Install dependencies for antmoc
 #-------------------------------------------------------------------------------
 COPY spack_install.sh .
 RUN set -e; \
@@ -94,6 +103,7 @@ ARG INSTALL_DIR=/opt/software
 
 COPY --from=builder $CONFIG_DIR $CONFIG_DIR
 COPY --from=builder $INSTALL_DIR $INSTALL_DIR
+COPY --from=builder $REPO_DIR $REPO_DIR
 
 #-------------------------------------------------------------------------------
 # Add a user
