@@ -28,8 +28,6 @@ The base image is [Spack](https://hub.docker.com/r/spack).
 
 ## make
 
-There are a bunch of build-time arguments you can use to build the image.
-
 It is highly recommended that you build the image with `make`.
 
 ```bash
@@ -40,8 +38,6 @@ make
 make release
 ```
 
-Check `Makefile` for more options.
-
 ## docker build
 
 As an alternative, you can build the image with `docker build` command.
@@ -50,8 +46,6 @@ As an alternative, you can build the image with `docker build` command.
 docker build \
         --build-arg SPACK_IMAGE="spack/ubuntu-bionic" \
         --build-arg SPACK_VERSION="latest" \
-        --build-arg COMPILER_SPEC="gcc@9.2.0" \
-        --build-arg EXTRA_SPECS="target=x86_64" \
         --build-arg BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` \
         --build-arg VCS_REF=`git rev-parse --short HEAD` \
         -t my-repo/antmoc-ci:gcc .
