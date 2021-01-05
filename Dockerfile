@@ -72,7 +72,9 @@ RUN set -eu; \
     spack compilers
 
 # copy the configuration file to the system path
-RUN spack config get compilers > ${CONFIG_DIR}/compilers.yaml
+RUN spack config get compilers > ${CONFIG_DIR}/compilers.yaml; \
+    sed -ie 's,f77:\s\+\[\],/usr/bin/gfortran,g' ${CONFIG_DIR}/compilers.yaml; \
+    sed -ie 's,fc:\s\+\[\],/usr/bin/gfortran,g' ${CONFIG_DIR}/compilers.yaml
 
 #-------------------------------------------------------------------------------
 # Install dependencies for antmoc
