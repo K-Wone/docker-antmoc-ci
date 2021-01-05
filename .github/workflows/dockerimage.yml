@@ -2,12 +2,14 @@ name: Build and Publish Docker
 
 on:
   push:
-    tags:
-      - '*.*.*'
+    branches:
+      - master
+    #    tags:
+    #      - '[0-9]*.*.*'
 
 jobs:
   docker-build:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
     - uses: actions/checkout@master
@@ -15,7 +17,7 @@ jobs:
     - name: Set git env
       run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
 
-    - name: Publish to Registry
+    - name: Build and publish image antmoc-ci
       uses: elgohr/Publish-Docker-Github-Action@master
       env:
         BUILD_DATE: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
