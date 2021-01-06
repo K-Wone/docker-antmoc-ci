@@ -2,6 +2,7 @@
 
 externals=(
     gcc
+    llvm
     autoconf
     automake
     libtool

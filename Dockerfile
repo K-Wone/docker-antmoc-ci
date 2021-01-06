@@ -11,78 +11,96 @@ FROM ${SPACK_IMAGE}:${SPACK_VERSION} AS builder
 USER root
 WORKDIR /tmp
 
-# set Spack root
-ARG SPACK_ROOT=/opt/spack
-ENV SPACK_ROOT=${SPACK_ROOT}
-
 # set Spack paths which should be shared between docker stages
+ARG SPACK_ROOT=/opt/spack
 ARG CONFIG_DIR=/etc/spack
 ARG INSTALL_DIR=/opt/software
 ARG MIRROR_DIR=/opt/mirror
 ARG REPO_DIR=/opt/repo
 
+# copy files from the context to the image
+#COPY mirror/ $MIRROR_DIR/
+COPY repo/ $REPO_DIR/
+COPY spack_find_externals.sh .
+COPY spack_install.sh .
+
 # create directories for Spack
 RUN set -e; \
     mkdir -p $CONFIG_DIR; \
     mkdir -p $INSTALL_DIR; \
-    mkdir -p $MIRROR_DIR; \
-    spack repo create $REPO_DIR ustb
+    mkdir -p $MIRROR_DIR
 
 # set the arch for packages
 ARG TARGET="x86_64"
 
-RUN set -e; \
-    echo "config:"                      > $CONFIG_DIR/config.yaml; \
-    echo "  install_tree:"              >> $CONFIG_DIR/config.yaml; \
-    echo "    root: $INSTALL_DIR"       >> $CONFIG_DIR/config.yaml; \
-    echo "mirrors:"                     > $CONFIG_DIR/mirrors.yaml; \
-    echo "  local: file://$MIRROR_DIR"  >> $CONFIG_DIR/mirrors.yaml; \
-    echo "repos:"                       > $CONFIG_DIR/repos.yaml; \
-    echo "  - $REPO_DIR"                >> $CONFIG_DIR/repos.yaml; \
-    echo "packages:"                    > $CONFIG_DIR/packages.yaml; \
-    echo "  all:"                       >> $CONFIG_DIR/packages.yaml; \
-    echo "    target: [$TARGET]"        >> $CONFIG_DIR/packages.yaml
+# generate configurations
+RUN (echo "config:" \
+&&   echo "  install_tree:" \
+&&   echo "    root: $INSTALL_DIR") > $CONFIG_DIR/config.yaml
 
-# copy custom package.py to the image
-COPY packages/ $REPO_DIR/packages/
+RUN (echo "mirrors:" \
+&&   echo "  local: file://$MIRROR_DIR") > $CONFIG_DIR/mirrors.yaml
+
+RUN (echo "repos:" \
+&&   echo "  - $REPO_DIR") > $CONFIG_DIR/repos.yaml
+
+RUN (echo "packages:" \
+&&   echo "  all:" \
+&&   echo "    target: [$TARGET]") > $CONFIG_DIR/packages.yaml
 
 #-------------------------------------------------------------------------------
 # Find or install compilers
 #-------------------------------------------------------------------------------
-# find system gcc
-ARG GCC_SPEC="gcc"
-RUN spack compiler add; \
-    spack compilers
+# install LLVM
+RUN apt-get update && apt-get install -y \
+        llvm-9 \
+        clang-9 \
+&&  rm -rf /var/lib/apt/lists/*
 
 # find external packages
-COPY spack_find_externals.sh .
 RUN set -e; \
     chmod u+x ./spack_find_externals.sh; \
     ./spack_find_externals.sh
 
-# install llvm
-ARG LLVM_SPEC="llvm"
-
-RUN set -eu; \
-    \
-    spack mirror create -D -d ${MIRROR_DIR} ${LLVM_SPEC}; \
-    spack install --fail-fast -ny ${LLVM_SPEC} %${GCC_SPEC}; \
-    spack load ${LLVM_SPEC}; \
-    spack compiler add; \
+# find system gcc and clang
+RUN spack compiler find; \
+    spack config get compilers > $CONFIG_DIR/compilers.yaml; \
     spack compilers
 
-# copy the configuration file to the system path
-RUN spack config get compilers > ${CONFIG_DIR}/compilers.yaml; \
-    sed -ie 's,f77:\s\+\[\],/usr/bin/gfortran,g' ${CONFIG_DIR}/compilers.yaml; \
-    sed -ie 's,fc:\s\+\[\],/usr/bin/gfortran,g' ${CONFIG_DIR}/compilers.yaml
+# install llvm
+#ARG LLVM_SPEC="llvm@11.0.0"
+
+#RUN set -e; \
+#    \
+#    spack mirror create -D -d ${MIRROR_DIR} ${LLVM_SPEC}; \
+#    spack install --fail-fast -ny ${LLVM_SPEC}; \
+#    spack load ${LLVM_SPEC}; \
+#    spack compiler add; \
+#    spack compilers
 
 #-------------------------------------------------------------------------------
 # Install dependencies for antmoc
 #-------------------------------------------------------------------------------
-COPY spack_install.sh .
 RUN set -e; \
     chmod u+x ./spack_install.sh; \
     ./spack_install.sh
+
+# strip all the binaries
+RUN find -L $INSTALL_DIR -type f -exec readlink -f '{}' \; | \
+    xargs file -i | \
+    grep 'charset=binary' | \
+    grep 'x-executable\|x-archive\|x-sharedlib' | \
+    awk -F: '{print $1}' | xargs strip -s
+
+#-------------------------------------------------------------------------------
+# Generate a script for enabling Spack
+#-------------------------------------------------------------------------------
+RUN set -e; \
+    (echo "#!/usr/bin/env bash" \
+&&   echo "export SPACK_ROOT=$SPACK_ROOT" \
+&&   echo ". $SPACK_ROOT/share/spack/setup-env.sh" \
+&&   echo "") > /etc/profile.d/z10_spack.sh
+
 
 #-------------------------------------------------------------------------------
 # Stage 2: build the runtime environment
@@ -93,56 +111,52 @@ FROM ${SPACK_IMAGE}:${SPACK_VERSION}
 
 LABEL maintainer="An Wang <wangan.cs@gmail.com>"
 
-# set spack root
-ARG SPACK_ROOT=/opt/spack
-ENV SPACK_ROOT=${SPACK_ROOT}
-
 #-------------------------------------------------------------------------------
 # Copy artifacts from stage 1 to stage 2
 #-------------------------------------------------------------------------------
 ARG CONFIG_DIR=/etc/spack
 ARG INSTALL_DIR=/opt/software
+ARG REPO_DIR=/opt/repo
 
 COPY --from=builder $CONFIG_DIR $CONFIG_DIR
 COPY --from=builder $INSTALL_DIR $INSTALL_DIR
 COPY --from=builder $REPO_DIR $REPO_DIR
+COPY --from=builder /etc/profile.d/z10_spack.sh /etc/profile.d/z10_spack.sh
+
+# install LLVM
+RUN apt-get update && apt-get install -y \
+        llvm-9 \
+        clang-9 \
+&&  rm -rf /var/lib/apt/lists/*
 
 #-------------------------------------------------------------------------------
 # Add a user
 #-------------------------------------------------------------------------------
 # set user name
 ARG USER_NAME=hpcer
-ENV USER_HOME="/home/$USER_NAME"
 
 # create the first user
-RUN set -eu; \
-      \
-      if ! id -u $USER_NAME > /dev/null 2>&1; then \
-          useradd -m $USER_NAME; \
-          echo "$USER_NAME ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers; \
-          cp -r ~/.spack $USER_HOME; \
-          chown -R ${USER_NAME}: $USER_HOME/.spack; \
-      fi
+RUN set -e; \
+    \
+    if ! id -u $USER_NAME > /dev/null 2>&1; then \
+        useradd -m $USER_NAME; \
+        echo "$USER_NAME ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers; \
+    fi
 
 # transfer control to the default user
 USER $USER_NAME
-WORKDIR $USER_HOME
+WORKDIR /home/$USER_NAME
 
-#-------------------------------------------------------------------------------
-# Generate a script for enabling Spack
-#-------------------------------------------------------------------------------
-ENV ENV_FILE="$USER_HOME/setup-env.sh"
 RUN set -e; \
     \
-    echo "#!/usr/bin/env bash" > $ENV_FILE; \
-    echo ". $SPACK_ROOT/share/spack/setup-env.sh" >> $ENV_FILE; \
-    chmod u+x $ENV_FILE
+    cp /etc/profile.d/z10_spack.sh ~/setup-env.sh; \
+    chmod u+x ~/setup-env.sh
 
 #-------------------------------------------------------------------------------
 # Reset the entrypoint
 #-------------------------------------------------------------------------------
-ENTRYPOINT []
-CMD ["/bin/bash"]
+ENTRYPOINT ["/bin/bash"]
+CMD ["--rcfile", "/etc/profile", "-l"]
 
 
 #-----------------------------------------------------------------------

@@ -2,14 +2,12 @@ name: Build and Publish Docker
 
 on:
   push:
-    branches:
-      - master
-    #    tags:
-    #      - '[0-9]*.*.*'
+    tags:
+      - '[0-9]*.*.*'
 
 jobs:
   docker-build:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@master
