@@ -65,6 +65,7 @@ RUN apt-get update && apt-get install -y \
 RUN apt-get update && apt-get install -y \
         llvm-9 \
         clang-9 \
+        libomp-9-dev \
         cmake
 
 # find external packages
@@ -94,6 +95,7 @@ ARG MPICH_SPEC="mpich@3.3.2"
 ARG OPENMPI_SPEC="openmpi@4.0.5"
 
 RUN spack install --fail-fast -ny lcov@1.14 %$GCC_SPEC
+RUN spack install --fail-fast -ny cmake %$GCC_SPEC
 RUN spack install --fail-fast -ny antmoc %$CLANG_SPEC ~mpi
 RUN spack install --fail-fast -ny antmoc %$GCC_SPEC ~mpi
 RUN spack install --fail-fast -ny antmoc %$GCC_SPEC +mpi ^$MPICH_SPEC
@@ -143,6 +145,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         cmake \
         clang-9 \
         llvm-9 \
+        libomp-9-dev \
         kmod \
         sudo \
         rocm-dev \
