@@ -21,8 +21,6 @@ ARG REPO_DIR=/opt/repo
 # copy files from the context to the image
 #COPY mirror/ $MIRROR_DIR/
 COPY repo/ $REPO_DIR/
-COPY spack_find_externals.sh .
-COPY spack_install.sh .
 
 # create directories for Spack
 RUN set -e; \
@@ -51,16 +49,33 @@ RUN (echo "packages:" \
 #-------------------------------------------------------------------------------
 # Find or install compilers
 #-------------------------------------------------------------------------------
-# install LLVM
+# install apt repositries
+RUN apt-get update && apt-get install -y \
+        apt-transport-https \
+        ca-certificates \
+        gnupg \
+        software-properties-common \
+        wget \
+&&  wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | \
+    gpg --dearmor - | \
+    tee /etc/apt/trusted.gpg.d/kitware.gpg >/dev/null \
+&&  apt-add-repository 'deb https://apt.kitware.com/ubuntu/ bionic main'
+
+# install LLVM and CMake
 RUN apt-get update && apt-get install -y \
         llvm-9 \
         clang-9 \
-&&  rm -rf /var/lib/apt/lists/*
+        cmake
 
 # find external packages
-RUN set -e; \
-    chmod u+x ./spack_find_externals.sh; \
-    ./spack_find_externals.sh
+RUN spack external find --scope system --not-buildable \
+        gcc \
+        llvm \
+        autoconf \
+        automake \
+        cmake \
+        libtool \
+        perl
 
 # find system gcc and clang
 RUN spack compiler find; \
@@ -70,9 +85,20 @@ RUN spack compiler find; \
 #-------------------------------------------------------------------------------
 # Install dependencies for antmoc
 #-------------------------------------------------------------------------------
-RUN set -e; \
-    chmod u+x ./spack_install.sh; \
-    ./spack_install.sh
+# Compiler specs
+ARG GCC_SPEC="gcc"
+ARG CLANG_SPEC="clang"
+
+# MPI specs
+ARG MPICH_SPEC="mpich@3.3.2"
+ARG OPENMPI_SPEC="openmpi@4.0.5"
+
+RUN spack install --fail-fast -ny lcov@1.14 %$GCC_SPEC
+RUN spack install --fail-fast -ny antmoc %$CLANG_SPEC ~mpi
+RUN spack install --fail-fast -ny antmoc %$GCC_SPEC ~mpi
+RUN spack install --fail-fast -ny antmoc %$GCC_SPEC +mpi ^$MPICH_SPEC
+RUN spack install --fail-fast -ny antmoc %$GCC_SPEC +mpi ^$OPENMPI_SPEC
+RUN spack gc -y && spack clean -a
 
 
 #-------------------------------------------------------------------------------
@@ -95,25 +121,35 @@ COPY --from=builder $CONFIG_DIR $CONFIG_DIR
 COPY --from=builder $INSTALL_DIR $INSTALL_DIR
 COPY --from=builder $REPO_DIR $REPO_DIR
 
-# install LLVM
+# install apt repositries
 RUN apt-get update && apt-get install -y \
+        apt-transport-https \
+        ca-certificates \
+        gnupg \
+        software-properties-common \
+        wget \
+&&  wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | \
+    gpg --dearmor - | \
+    tee /etc/apt/trusted.gpg.d/kitware.gpg >/dev/null \
+&&  apt-add-repository 'deb https://apt.kitware.com/ubuntu/ bionic main' \
+    \
+&&  wget -q -O - https://repo.radeon.com/rocm/rocm.gpg.key | \
+    apt-key add - \
+&&  echo 'deb [arch=amd64] https://repo.radeon.com/rocm/apt/debian/ xenial main' | \
+    tee /etc/apt/sources.list.d/rocm.list
+
+# install CMake, LLVM, and ROCm
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        cmake \
         clang-9 \
         llvm-9 \
         kmod \
         sudo \
-        wget \
-&&  rm -f /usr/bin/clang /usr/bin/clang++ \
-&&  ln -s /usr/bin/clang-9 /usr/bin/clang \
-&&  ln -s /usr/bin/clang++-9 /usr/bin/clang++
-
-# install ROCm
-RUN wget -q -O - https://repo.radeon.com/rocm/rocm.gpg.key | \
-    apt-key add - \
-&&  echo 'deb [arch=amd64] https://repo.radeon.com/rocm/apt/debian/ xenial main' | \
-    tee /etc/apt/sources.list.d/rocm.list \
-&&  apt-get update && apt-get install -y \
         rocm-dev \
         rocthrust \
+&&  rm -f /usr/bin/clang /usr/bin/clang++ \
+&&  ln -s /usr/bin/clang-9 /usr/bin/clang \
+&&  ln -s /usr/bin/clang++-9 /usr/bin/clang++ \
 &&  rm -rf /var/lib/apt/lists/*
 
 #-------------------------------------------------------------------------------
