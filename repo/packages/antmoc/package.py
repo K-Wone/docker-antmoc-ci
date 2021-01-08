@@ -10,13 +10,9 @@ class Antmoc(BundlePackage):
 
     version('0.1.15')
 
-    variant('hip', default=False, description='Enable HIP support')
     variant('mpi', default=False, description='Enable MPI support')
 
     depends_on('cmake@3.15:', type='build')
-    depends_on('hip@3.10.0', when='+hip')
-    depends_on('rocprim@3.10.0', when='+hip')
-    depends_on('rocthrust@3.10.0', when='+hip')
     depends_on('mpi@3.0', when='+mpi', type=('build', 'link', 'run'))
     depends_on('cxxopts@master')
     depends_on('fmt@6.0.0')

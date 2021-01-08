@@ -15,14 +15,11 @@ packages=(
     "cmake %$GCC_SPEC"
     "lcov@1.14 %$GCC_SPEC"
     # with clang
-    "antmoc ~mpi~hip %$CLANG_SPEC"
-    # with hip
-    "antmoc ~mpi+hip %$GCC_SPEC"
-    "antmoc +mpi+hip %$GCC_SPEC ^$MPICH_SPEC"
+    "antmoc ~mpi %$CLANG_SPEC"
     # with gcc
-    "antmoc ~mpi~hip %$GCC_SPEC"
-    "antmoc +mpi~hip %$GCC_SPEC ^$MPICH_SPEC"
-    "antmoc +mpi~hip %$GCC_SPEC ^$OPENMPI_SPEC"
+    "antmoc ~mpi %$GCC_SPEC"
+    "antmoc +mpi %$GCC_SPEC ^$MPICH_SPEC"
+    "antmoc +mpi %$GCC_SPEC ^$OPENMPI_SPEC"
 )
 
 dir_spack_mirror="/opt/mirror"
@@ -34,9 +31,6 @@ for i in "${packages[@]}"; do
     $cmd_spack_mirror  $i
     $cmd_spack_install $i
 done
-
-# Workaround missing llvm-amdgpu
-spack mark -a -e llvm-amdgpu
 
 # Cleanup
 spack gc -y

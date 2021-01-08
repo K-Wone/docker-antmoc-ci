@@ -67,39 +67,12 @@ RUN spack compiler find; \
     spack config get compilers > $CONFIG_DIR/compilers.yaml; \
     spack compilers
 
-# install llvm
-#ARG LLVM_SPEC="llvm@11.0.0"
-
-#RUN set -e; \
-#    \
-#    spack mirror create -D -d ${MIRROR_DIR} ${LLVM_SPEC}; \
-#    spack install --fail-fast -ny ${LLVM_SPEC}; \
-#    spack load ${LLVM_SPEC}; \
-#    spack compiler add; \
-#    spack compilers
-
 #-------------------------------------------------------------------------------
 # Install dependencies for antmoc
 #-------------------------------------------------------------------------------
 RUN set -e; \
     chmod u+x ./spack_install.sh; \
     ./spack_install.sh
-
-# strip all the binaries
-RUN find -L $INSTALL_DIR -type f -exec readlink -f '{}' \; | \
-    xargs file -i | \
-    grep 'charset=binary' | \
-    grep 'x-executable\|x-archive\|x-sharedlib' | \
-    awk -F: '{print $1}' | xargs strip -s
-
-#-------------------------------------------------------------------------------
-# Generate a script for enabling Spack
-#-------------------------------------------------------------------------------
-RUN set -e; \
-    (echo "#!/usr/bin/env bash" \
-&&   echo "export SPACK_ROOT=$SPACK_ROOT" \
-&&   echo ". $SPACK_ROOT/share/spack/setup-env.sh" \
-&&   echo "") > /etc/profile.d/z10_spack.sh
 
 
 #-------------------------------------------------------------------------------
@@ -121,12 +94,26 @@ ARG REPO_DIR=/opt/repo
 COPY --from=builder $CONFIG_DIR $CONFIG_DIR
 COPY --from=builder $INSTALL_DIR $INSTALL_DIR
 COPY --from=builder $REPO_DIR $REPO_DIR
-COPY --from=builder /etc/profile.d/z10_spack.sh /etc/profile.d/z10_spack.sh
 
 # install LLVM
 RUN apt-get update && apt-get install -y \
-        llvm-9 \
         clang-9 \
+        llvm-9 \
+        kmod \
+        sudo \
+        wget \
+&&  rm -f /usr/bin/clang /usr/bin/clang++ \
+&&  ln -s /usr/bin/clang-9 /usr/bin/clang \
+&&  ln -s /usr/bin/clang++-9 /usr/bin/clang++
+
+# install ROCm
+RUN wget -q -O - https://repo.radeon.com/rocm/rocm.gpg.key | \
+    apt-key add - \
+&&  echo 'deb [arch=amd64] https://repo.radeon.com/rocm/apt/debian/ xenial main' | \
+    tee /etc/apt/sources.list.d/rocm.list \
+&&  apt-get update && apt-get install -y \
+        rocm-dev \
+        rocthrust \
 &&  rm -rf /var/lib/apt/lists/*
 
 #-------------------------------------------------------------------------------
@@ -147,16 +134,23 @@ RUN set -e; \
 USER $USER_NAME
 WORKDIR /home/$USER_NAME
 
-RUN set -e; \
-    \
-    cp /etc/profile.d/z10_spack.sh ~/setup-env.sh; \
-    chmod u+x ~/setup-env.sh
+# generate a script for Spack
+RUN (echo "#!/usr/bin/env bash" \
+&&   echo "export PATH=\$PATH:/opt/rocm/bin:/opt/rocm/rocprofiler/bin:/opt/rocm/opencl/bin" \
+&&   echo "export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:/opt/rocm/lib:/opt/rocm/hip/lib:/opt/rocm/llvm/lib:/opt/rocm/opencl/lib" \
+&&   echo "export INCLUDE=\$INCLUDE:/opt/rocm/include:/opt/rocm/hip/include:/opt/rocm/llvm/include" \
+&&   echo "export C_INCLUDE_PATH=\$C_INCLUDE_PATH:/opt/rocm/include:/opt/rocm/hip/include:/opt/rocm/llvm/include" \
+&&   echo "export CPLUS_INCLUDE_PATH=\$CPLUS_INCLUDE_PATH:/opt/rocm/include:/opt/rocm/hip/include:/opt/rocm/llvm/include" \
+&&   echo "export SPACK_ROOT=$SPACK_ROOT" \
+&&   echo ". $SPACK_ROOT/share/spack/setup-env.sh" \
+&&   echo "") > ~/setup-env.sh \
+&&   chmod u+x ~/setup-env.sh
 
 #-------------------------------------------------------------------------------
 # Reset the entrypoint
 #-------------------------------------------------------------------------------
-ENTRYPOINT ["/bin/bash"]
-CMD ["--rcfile", "/etc/profile", "-l"]
+ENTRYPOINT []
+CMD ["/bin/bash"]
 
 
 #-----------------------------------------------------------------------
